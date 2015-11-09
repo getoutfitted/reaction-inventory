@@ -25,7 +25,7 @@ Package.onUse(function (api) {
   api.addFiles("schema.js"); // ReactionCore.Schemas.Inventory
   api.addFiles("collections.js"); // Inventory collection
   api.addFiles("server/publications.js", ["server"]); // publish inventory
-
+  api.addFiles("hooks.js"); // hook into core collection updates
   api.addFiles("routing.js"); // dashboard/inventory
   api.addFiles("inventory.js"); // inventory methods
   api.addFiles("server/register.js", ["server"]); // register as a reaction package
