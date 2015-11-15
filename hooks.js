@@ -22,7 +22,7 @@ ReactionCore.Collections.Cart.after.update(function (userId, cart, fieldNames, m
     ReactionCore.Log.info("after variant increment, call inventory/addReserve");
     Meteor.call("inventory/addReserve", cart.items);
   }
-  // removing  items
+  // removing  cart items, clear inventory reserve
   if (modifier.$pull) {
     if (modifier.$pull.items) {
       ReactionCore.Log.info("remove cart items, call inventory/clearReserve");
@@ -31,6 +31,24 @@ ReactionCore.Collections.Cart.after.update(function (userId, cart, fieldNames, m
   }
 });
 
+
+//
+// before product update
+//
+ReactionCore.Collections.Products.before.update(function (userId, product, fieldNames, modifier) {
+  // removing  items
+  if (modifier.$pull) {
+    if (modifier.$pull.variants) {
+      let variantItem = {
+        productId: product._id,
+        variantId: product.variants[0]._id,
+        shopId: product.shopId
+      };
+      ReactionCore.Log.info("remove inventory variants, call inventory/remove");
+      Meteor.call("inventory/remove", variantItem);
+    }
+  }
+});
 //
 // after product update
 //

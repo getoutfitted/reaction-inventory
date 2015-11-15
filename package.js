@@ -18,6 +18,7 @@ Package.onUse(function (api) {
   api.use("random");
   api.use("ejson");
   api.use("check");
+  api.use("ecmascript");
   api.use("ddp-rate-limiter");
 
   api.use("reactioncommerce:core@0.9.5");
@@ -30,4 +31,19 @@ Package.onUse(function (api) {
   api.addFiles("inventory.js"); // inventory methods
   api.addFiles("server/register.js", ["server"]); // register as a reaction package
   api.addFiles("server/methods.js", ["server"]); // server methods
+});
+
+Package.onTest(function (api) {
+  api.use("sanjo:jasmine@0.20.2");
+  api.use("ecmascript");
+  api.use("jquery");
+  api.use("underscore");
+  api.use("velocity:html-reporter@0.9.1");
+  api.use("velocity:console-reporter@0.1.4");
+
+  api.use("reactioncommerce:core");
+  api.use("reactioncommerce:reaction-factories");
+  api.use("reactioncommerce:reaction-inventory");
+
+  api.addFiles("tests/jasmine/server/integration/inventory.js", "server");
 });

@@ -6,22 +6,26 @@ ReactionCore.registerPackage({
   settings: {
     name: "Inventory"
   },
-  registry: [
-    {
-      provides: "dashboard",
-      route: "dashboard/inventory",
-      label: "Basic Inventory",
-      description: "Basic Inventory Management",
-      icon: "fa fa-truck",
-      cycle: 4,
-      group: "reaction-inventory"
-    },
-    {
-      label: "Inventory Settings",
-      route: "dashboard/inventory",
-      provides: "settings",
-      group: "reaction-inventory",
-      template: "inventorySettings"
-    }
-  ]
+  registry: [{
+    provides: "dashboard",
+    route: "dashboard/inventory",
+    label: "Basic Inventory",
+    description: "Basic Inventory Management",
+    icon: "fa fa-truck",
+    cycle: 1,
+    group: "reaction-inventory"
+  }, {
+    label: "Inventory Settings",
+    route: "dashboard/inventory",
+    provides: "settings",
+    group: "reaction-inventory",
+    template: "inventorySettings"
+  }],
+  layout: [{
+    layout: "coreLayout",
+    workflow: "coreInventoryWorkflow",
+    collection: "Inventory",
+    theme: "default",
+    enabled: true
+  }]
 });

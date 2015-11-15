@@ -32,8 +32,8 @@ Meteor.methods({
    */
   "inventory/register": function (product) {
     check(product, ReactionCore.Schemas.Product);
-    this.unblock();
-
+    // this.unblock();
+    let totalNewInventory = 0;
     // user needs createProduct permission to register new inventory
     if (!ReactionCore.hasPermission("createProduct")) {
       throw new Meteor.Error(403, "Access Denied");
@@ -46,6 +46,7 @@ Meteor.methods({
         variantId: variant._id,
         shopId: product.shopId
       });
+      // we'll return this as well
       let inventoryVariantCount = inventory.count();
       // if the variant exists already we're remove from the inventoryVariants
       // so that we don't process it as an insert
@@ -54,7 +55,7 @@ Meteor.methods({
         let i = inventoryVariantCount + 1;
 
         ReactionCore.Log.info(
-          `inserting ${i} new inventory items for ${variant._id}`
+          `inserting ${newQty - inventoryVariantCount} new inventory items for ${variant._id}`
         );
 
         while (i <= newQty) {
@@ -63,6 +64,7 @@ Meteor.methods({
             variantId: variant._id,
             productId: product._id
           });
+
           // checking updated inventory state
           realQty = ReactionCore.Collections.Inventory.find({
             shopId: product.shopId,
@@ -73,12 +75,15 @@ Meteor.methods({
           if (realQty !== i) {
             throw new Meteor.Error("Inventory Anomoly Detected. Abort!");
           }
-          ReactionCore.Log.info("inventory/register added", inventoryItem);
+          ReactionCore.Log.debug("inventory/register added", inventoryItem);
+          totalNewInventory++;
           i++;
         }
       }
     }
-    return;
+    // return the total amount
+    // of new inventory created
+    return totalNewInventory;
   },
   /**
    * inventory/adjust
@@ -115,9 +120,11 @@ Meteor.methods({
         variantId: variant._id
       });
       let itemCount = Inventory.count();
+
       ReactionCore.Log.info(
-        `found inventory count: ${itemCount} variant.inventoryQuantity ${variant.qty} variant._id: ${variant._id}`
+        `inventory: adjust variant ${variant._id} from ${itemCount} to ${variant.qty} `
       );
+
       // we need to register some new variants to inventory
       if (itemCount < variant.qty) {
         Meteor.call("inventory/register", product);
@@ -141,7 +148,6 @@ Meteor.methods({
 
         // delete latest inventory records that are new
         for (let inventoryItem of removeInventory) {
-          ReactionCore.Log.info("removing excess inventory");
           // we can only remove inventory marked as new
           Meteor.call("inventory/remove", inventoryItem);
         }
@@ -158,13 +164,13 @@ Meteor.methods({
       throw new Meteor.Error(403, "Access Denied");
     }
 
-    ReactionCore.Log.info("inventory/remove", inventoryItem);
+    ReactionCore.Log.debug("inventory/remove", inventoryItem);
     return ReactionCore.Collections.Inventory.remove(inventoryItem);
   },
   /**
    * inventory/addReserve
    *
-   * @param  {Object} cartItems object should be of type ReactionCore.Schemas.Cart.items
+   * @param  {Array} cartItems array of objects of type ReactionCore.Schemas.CartItems
    * @param  {String} status optional - sets the inventory workflow status, defaults to "reserved"
    * @return {undefined} returns undefined
    */
@@ -173,7 +179,7 @@ Meteor.methods({
     check(status, Match.Optional(String));
     this.unblock();
     const newStatus = status || "reserved"; // change status to options object
-
+    let reservationCount = 0;
     // update each cart item in inventory
     for (let item of cartItems) {
       // check of existing reserved inventory for this cart
@@ -183,42 +189,45 @@ Meteor.methods({
         shopId: item.shopId,
         orderId: item._id
       });
+
       // define a new reservation
-      const reservation = {
-        productId: item.productId,
-        variantId: item.variants._id,
-        shopId: item.shopId,
-        workflow: {
-          status: newStatus
-        }
-      };
-      // just defined for brevity
-      // let inventoryStatus = {
-      //   "orderId": item._id,
-      //   "workflow.status": newStatus
-      // };
-      const totalRequiredQty = item.quantity;
-      const availableInventory = ReactionCore.Collections.Inventory.find(reservation);
+      let availableInventory = ReactionCore.Collections.Inventory.find({
+        "productId": item.productId,
+        "variantId": item.variants._id,
+        "shopId": item.shopId,
+        "workflow.status": "new"
+      });
+
+      const totalRequiredQty = item.quantity; //
       const availableInventoryQty = availableInventory.count();
       let existingReservationQty = existingReservations.count();
 
-      // if we don't have existing inventory we
-      // should do something with this.
-      // we could create a new inventory item
-      // set status to reserved
-      // and add "backorder" to workflow.workflow
+
+      ReactionCore.Log.info("totalRequiredQty", totalRequiredQty);
+      ReactionCore.Log.info("availableInventoryQty", availableInventoryQty);
+
+      // if we don't have existing inventory we create backorders
       if (totalRequiredQty > availableInventoryQty) {
         let backOrderQty = Number(totalRequiredQty - availableInventoryQty - existingReservationQty);
         ReactionCore.Log.info("no inventory found, backorder.", backOrderQty);
-        reservation.workflow.status = "backorder";
-        Meteor.call("inventory/backorder", reservation, backOrderQty);
-        existingReservationQty = totalRequiredQty;
-      }
+        // define a new reservation
+        const reservation = {
+          productId: item.productId,
+          variantId: item.variants._id,
+          shopId: item.shopId,
+          orderId: item._id
+        };
 
-      let i = existingReservationQty || 0;
-      // add new reservations
-      ReactionCore.Log.info(`reserving ${i} inventory for ${totalRequiredQty} items.`);
-      while (i < totalRequiredQty) {
+        Meteor.call("inventory/backorder", reservation, backOrderQty);
+        existingReservationQty = backOrderQty;
+      }
+      // if we have inventory available, only create additional required reservations
+      ReactionCore.Log.debug("existingReservationQty", existingReservationQty);
+      let newReservedQty = totalRequiredQty - existingReservationQty;
+      let i = 0;
+      // updated existing new inventory to be reserved
+      ReactionCore.Log.info(`reserving ${newReservedQty} inventory of ${totalRequiredQty} items.`);
+      while (i < newReservedQty) {
         // we should be updating existing inventory here.
         // backorder process created additional backorder inventory if there
         // wasn't enough.
@@ -233,11 +242,12 @@ Meteor.methods({
             "workflow.status": newStatus
           }
         });
+        reservationCount = i;
         i++;
       }
     }
-    ReactionCore.Log.info("inventory/addReserve", newStatus);
-    return;
+    ReactionCore.Log.info("inventory/addReserve", reservationCount, newStatus);
+    return reservationCount;
   },
 /**
  * inventory/clearReserve
@@ -267,17 +277,18 @@ Meteor.methods({
         "workflow.status": oldStatus
       });
       let i = existingReservations.count();
-      // add new reservations
+      // reset existing cartItem reservations
       while (i <= item.quantity) {
         ReactionCore.Collections.Inventory.update({
           "productId": item.productId,
           "variantId": item.variants._id,
           "shopId": item.shopId,
+          "orderId": item._id,
           "workflow.status": oldStatus
         }, {
           $set: {
-            "orderId": item._id,
-            "workflow.status": newStatus
+            "orderId": "", // clear order/cart
+            "workflow.status": newStatus // reset status
           }
         });
         i++;
@@ -302,16 +313,19 @@ Meteor.methods({
     check(backOrderQty, Number);
     const inventoryBackorder = [];
     // if meteor user is a guest
-
-    ReactionCore.Log.info("inventory/backorder", backOrderQty);
-
-    const newReservation = reservation;
+    let newReservation = reservation;
+    // default to backorder status if not defined.
+    if (!newReservation.workflow) {
+      newReservation.workflow = {
+        status: "backorder"
+      };
+    }
+    // insert backorder
     let i = 0;
-
     while (i < backOrderQty) {
       inventoryId = ReactionCore.Collections.Inventory.insert(newReservation);
       inventoryBackorder.push(inventoryId);
-      ReactionCore.Log.info("inventory: demand created backorder", inventoryId);
+      ReactionCore.Log.debug("inventory: demand created backorder", inventoryId);
       i++;
     }
     return inventoryBackorder;
