@@ -20,17 +20,29 @@ Package.onUse(function (api) {
   api.use("check");
   api.use("ecmascript");
   api.use("ddp-rate-limiter");
-
+  api.use("blaze-html-templates");
   api.use("reactioncommerce:core@0.9.5");
+  api.use("ongoworks:bunyan-logger@2.5.0");
+  
+  api.addFiles("common/globals.js"); // Inventory Globals
+  api.addFiles("common/schema.js"); // ReactionCore.Schemas.Inventory
+  api.addFiles("common/collections.js"); // Inventory collection
+  api.addFiles("common/hooks.js"); // hook into core collection updates
+  api.addFiles("common/routing.js"); // dashboard/inventory
+  api.addFiles("common/methods.js"); // inventory methods
 
-  api.addFiles("schema.js"); // ReactionCore.Schemas.Inventory
-  api.addFiles("collections.js"); // Inventory collection
-  api.addFiles("server/publications.js", ["server"]); // publish inventory
-  api.addFiles("hooks.js"); // hook into core collection updates
-  api.addFiles("routing.js"); // dashboard/inventory
-  api.addFiles("inventory.js"); // inventory methods
   api.addFiles("server/register.js", ["server"]); // register as a reaction package
+  api.addFiles("server/publications.js", ["server"]); // publish inventory
   api.addFiles("server/methods.js", ["server"]); // server methods
+
+  // api.addFiles("client/templates/dashboard/inventory.js", "client");
+  // api.addFiles("client/templates/dashboard/inventory.html", "client");
+
+  api.addFiles("client/templates/settings/settings.js", "client");
+  api.addFiles("client/templates/settings/settings.html", "client");
+
+  // export for server use
+  api.export("ReactionInventory", "server");
 });
 
 Package.onTest(function (api) {
@@ -45,5 +57,5 @@ Package.onTest(function (api) {
   api.use("reactioncommerce:reaction-factories");
   api.use("reactioncommerce:reaction-inventory");
 
-  api.addFiles("tests/jasmine/server/integration/inventory.js", "server");
+  api.addFiles("tests/jasmine/server/integration/inventorySpecs.js", "server");
 });
