@@ -17,7 +17,7 @@ ReactionCore.Schemas.Inventory = new SimpleSchema({
     type: String,
     index: true
   },
-  orderId: {
+  orderItemId: {
     type: String,
     index: true,
     optional: true

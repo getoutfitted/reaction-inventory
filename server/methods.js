@@ -5,6 +5,7 @@
 Meteor.methods({
   /**
    * inventory/register
+   * @summary check a product and update Inventory collection with inventory documents.
    * @param {Object} product - valid ReactionCore.Schemas.Product object
    * @return {Number} - returns the total amount of new inventory created
    */
@@ -58,7 +59,7 @@ Meteor.methods({
   },
   /**
    * inventory/adjust
-   * adjust existing inventory when changes are made
+   * @summary adjust existing inventory when changes are made
    * we get the inventoryQuantity for each product variant,
    * and compare the qty to the qty in the inventory records
    * we will add inventoryItems as needed to have the same amount as the inventoryQuantity

@@ -23,7 +23,7 @@ Package.onUse(function (api) {
   api.use("blaze-html-templates");
   api.use("reactioncommerce:core@0.9.5");
   api.use("ongoworks:bunyan-logger@2.5.0");
-  
+
   api.addFiles("common/globals.js"); // Inventory Globals
   api.addFiles("common/schema.js"); // ReactionCore.Schemas.Inventory
   api.addFiles("common/collections.js"); // Inventory collection
@@ -31,6 +31,7 @@ Package.onUse(function (api) {
   api.addFiles("common/routing.js"); // dashboard/inventory
   api.addFiles("common/methods.js"); // inventory methods
 
+  api.addFiles("server/logger.js", ["server"]); // configure bunyan-logger
   api.addFiles("server/register.js", ["server"]); // register as a reaction package
   api.addFiles("server/publications.js", ["server"]); // publish inventory
   api.addFiles("server/methods.js", ["server"]); // server methods

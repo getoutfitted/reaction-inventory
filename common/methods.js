@@ -26,8 +26,8 @@ DDPRateLimiter.addRule(addBackorderRule, 5, 1000);
 
 Meteor.methods({
   /**
-   * inventory/addStatus
-   *
+   * inventory/setStatus
+   * @summary sets status from one status to a new status. Defaults to "new" to "reserved"
    * @param  {Array} cartItems array of objects of type ReactionCore.Schemas.CartItems
    * @param  {String} status optional - sets the inventory workflow status, defaults to "reserved"
    * @return {undefined} returns undefined
@@ -57,7 +57,7 @@ Meteor.methods({
         productId: item.productId,
         variantId: item.variants._id,
         shopId: item.shopId,
-        orderId: item._id
+        orderItemId: item._id
       });
 
       // define a new reservation
@@ -85,7 +85,7 @@ Meteor.methods({
           productId: item.productId,
           variantId: item.variants._id,
           shopId: item.shopId,
-          orderId: item._id,
+          orderItemId: item._id,
           workflow: {
             status: backorderStatus
           }
@@ -114,7 +114,7 @@ Meteor.methods({
           "workflow.status": "new"
         }, {
           $set: {
-            "orderId": item._id,
+            "orderItemId": item._id,
             "workflow.status": reservationStatus
           }
         });
@@ -128,7 +128,7 @@ Meteor.methods({
   },
   /**
    * inventory/clearStatus
-   * used to reset status on inventory item (defaults to "new")
+   * @summary used to reset status on inventory item (defaults to "new")
    * @param  {Array} cartItems array of objects ReactionCore.Schemas.CartItem
    * @param  {[type]} status optional reset workflow.status, defaults to "new"
    * @param  {[type]} currentStatus optional matching workflow.status, defaults to "reserved"
@@ -156,7 +156,7 @@ Meteor.methods({
         "productId": item.productId,
         "variantId": item.variants._id,
         "shopId": item.shopId,
-        "orderId": item._id,
+        "orderItemId": item._id,
         "workflow.status": oldStatus
       });
       let i = existingReservations.count();
@@ -166,11 +166,11 @@ Meteor.methods({
           "productId": item.productId,
           "variantId": item.variants._id,
           "shopId": item.shopId,
-          "orderId": item._id,
+          "orderItemId": item._id,
           "workflow.status": oldStatus
         }, {
           $set: {
-            "orderId": "", // clear order/cart
+            "orderItemId": "", // clear order/cart
             "workflow.status": newStatus // reset status
           }
         });
@@ -182,7 +182,7 @@ Meteor.methods({
   },
   /**
    * inventory/clearReserve
-   * resets "reserved" items to "new"
+   * @summary resets "reserved" items to "new"
    * @param  {Array} cartItems array of objects ReactionCore.Schemas.CartItem
    * @return {undefined}
    */
@@ -202,10 +202,12 @@ Meteor.methods({
   },
   /**
    * inventory/backorder
-   * is used by the cart process to create a new Inventory
+   * @summary is used by the cart process to create a new Inventory
    * backorder item, but this could be used for inserting any
-   * custom inventory as
-   * DDP Limits: as these are wide open we defined some ddp limiting rules http://docs.meteor.com/#/full/ddpratelimiter
+   * custom inventory.
+   *
+   * A note on DDP Limits.
+   * As these are wide open we defined some ddp limiting rules http://docs.meteor.com/#/full/ddpratelimiter
    *
    * @param {Object} reservation ReactionCore.Schemas.Inventory
    * @param {Number} backOrderQty number of backorder items to create
