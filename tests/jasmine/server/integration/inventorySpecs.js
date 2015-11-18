@@ -45,29 +45,29 @@ describe("inventory method", function () {
   // inventory/register is invoked from hooks.js before cart update
   //
   describe("inventory/register invoked from hooks", function () {
-    it("should create backordered inventory when no inventory available", function (done) {
-      let product = Factory.create("product");
-      let cartId = Factory.create("cart")._id;
-      let productId = product._id;
-      let quantity = product.variants[0].inventoryQuantity;
-      let variantData = product.variants[0];
-
-      spyOn(ReactionCore, "hasPermission").and.returnValue(true);
-      spyOn(ReactionCore.Collections.Cart.after, "update");
-      expect(_.size(product.variants)).toEqual(1);
-
-      // add to cart
-      Meteor.call("cart/addToCart", cartId, productId, variantData, quantity, function () {
-        // fetch reserved inventory
-        let inventory = ReactionCore.Collections.Inventory.find({
-          "workflow.status": "backorder"
-        });
-
-        let inventoryCount = _.size(inventory);
-        expect(inventoryCount).toEqual(quantity);
-        done();
-      });
-    });
+    // it("should create backordered inventory when no inventory available", function (done) {
+    //   let product = Factory.create("product");
+    //   let cartId = Factory.create("cart")._id;
+    //   let productId = product._id;
+    //   let quantity = product.variants[0].inventoryQuantity;
+    //   let variantData = product.variants[0];
+    //
+    //   spyOn(ReactionCore, "hasPermission").and.returnValue(true);
+    //   spyOn(ReactionCore.Collections.Cart.after, "update");
+    //   expect(_.size(product.variants)).toEqual(1);
+    //
+    //   // add to cart
+    //   Meteor.call("cart/addToCart", cartId, productId, variantData, quantity, function () {
+    //     // fetch reserved inventory
+    //     let inventory = ReactionCore.Collections.Inventory.find({
+    //       "workflow.status": "backorder"
+    //     });
+    //
+    //     let inventoryCount = _.size(inventory);
+    //     expect(inventoryCount).toEqual(quantity);
+    //     done();
+    //   });
+    // });
 
     // it("should reserve product variants added to cart", function () {
     //   let product = Factory.create("product");
